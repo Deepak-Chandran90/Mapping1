@@ -1,0 +1,458 @@
+USE [eddiextraction]
+GO
+/****** Object:  StoredProcedure [dbo].[Mapping2]    Script Date: 11/28/2024 10:28:22 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		<Author,,Name>
+-- Create date: <Create Date,,>
+-- Description:	<Description,,>
+-- =============================================
+ALTER PROCEDURE [dbo].[Mapping2] @Table nvarchar(255)
+--set @curdate = FORMAT(getdate(),'yyyy-MM-dd');
+-- SET NOCOUNT ON added to prevent extra result sets from
+-- interfering with SELECT statements.
+AS
+BEGIN
+SET NOCOUNT ON;
+declare @sql nvarchar(max),@outputA varchar(50),@outputB nvarchar(50),@outputC nvarchar(50),@date nvarchar(20)
+set @outputA='Set'+FORMAT(getdate(),'MMdd')+'_ip_op';
+set @date=FORMAT(getdate(),'yyyy-MM-dd');
+
+--select FORMAT(getdate()-3,'MMdd')
+
+--select * from set_check_1 where m_status='maped_venues' -- 7889
+--select distinct m_status  from set_check_1
+/***
+m_status
+unmaped_venues
+manual_analyses2
+maped_venues
+manual_analyses ***/
+/***
+select * from set_check_1 where m_status='maped_venues' -- 2889
+select * from set_check_1 where m_status='unmaped_venues' -- 3219
+select * from set_check_1 where m_status='manual_analyses' -- 167
+select * from set_check_1 where m_status='manual_analyses2' -- 0 ***/
+
+--select Count(*) from '+@table+'  -- 294647
+
+SELECT @sql= 'alter table '+@table+' add Venue nvarchar(255)
+alter table '+@table+' add Address nvarchar(255)
+alter table '+@table+' add City nvarchar(255)
+alter table '+@table+' add State nvarchar(255)
+alter table '+@table+' add Country nvarchar(255)
+alter table '+@table+' add zip nvarchar(255)
+alter table '+@table+' add Latitude nvarchar(255)
+alter table '+@table+' add Longitude nvarchar(255)
+alter table '+@table+' add VCapacity nvarchar(500)
+alter table '+@table+' add VCategory nvarchar(255)
+alter table '+@table+' add Venueid nvarchar(255) '
+EXEC SP_EXECUTESQL @SQL
+
+--select top 10 * from '+@table+'
+
+SELECT @sql= 'drop table Mapped_venue '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'select * into Mapped_venue from set_check_1 where m_status=''maped_venues'' '
+EXEC SP_EXECUTESQL @SQL
+
+EXEC sp_rename  'Mapped_venue.[Google  Name]', 'Google_Name','COLUMN'
+EXEC sp_rename  'Mapped_venue.[Google  address]', 'Google_address','COLUMN'
+EXEC sp_rename  'Mapped_venue.[Google city]', 'Google_city','COLUMN'
+EXEC sp_rename  'Mapped_venue.[Google state]', 'Google_state','COLUMN'
+EXEC sp_rename  'Mapped_venue.[Google  Country]', 'Google_Country','COLUMN'
+EXEC sp_rename  'Mapped_venue.[Google  Zip]', 'Google_Zip','COLUMN'
+EXEC sp_rename  'Mapped_venue.[Google  Latitude]', 'Google_Latitude','COLUMN'
+EXEC sp_rename  'Mapped_venue.[Google  longitude]', 'Google_longitude','COLUMN'
+
+SELECT @sql= 'UPDATE a set  a.Venue=b.Google_Name,  
+a.address=b.Google_address, 
+a.city=b.Google_city, 
+a.state=b.Google_state, 
+a.country=b.Google_Country, 
+a.zip=b.Google_Zip, 
+a.latitude=b.Google_Latitude, 
+a.longitude=b.Google_longitude,
+a.cid=b.CID,
+a.V_status=''Set 1 Matches''
+FROM '+@table+' a 
+join Mapped_venue b on a.Temp_id=b.input_id and isnull(a.V_status,'''')='''' ; '
+EXEC SP_EXECUTESQL @SQL 
+
+SELECT @sql= 'update a set  a.VCapacity=b.VCapacity, a.VCategory=b.VCategory from '+@table+' a 
+join '+@outputA+' b on a.CID=b.CID  where a.V_status=''Set 1 Matches'' ; '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'update a set  a.Venueid=b.venueid, a.Venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State, a.Country=b.Country, a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.VCapacity=b.VCapacity,
+a.VCategory=b.VCategory
+from '+@table+' a 
+join Eddi_data..Venue_rep_new b on a.CID=b.CID  where a.v_status=''cons match'' 
+and isnull(a.venue,'''')='''' and isnull(b.CID,'''')!='''' ; ' 
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'update a set 
+a.Venueid=b.venueid,
+a.Venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State,
+a.Country=b.Country,
+a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.VCapacity=b.VCapacity,
+a.VCategory=b.VCategory
+from '+@table+' a 
+join Eddi_data..Venue_rep_new b on a.CID=b.CID  where a.v_status=''before_value_match'' 
+and isnull(a.venue,'''')='''' and isnull(b.CID,'''')!='''' ; ' 
+EXEC SP_EXECUTESQL @SQL
+
+
+SELECT @sql= 'update a set 
+a.Venueid=b.venueid,
+a.Venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State,
+a.Country=b.Country,
+a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.VCapacity=b.VCapacity,
+a.VCategory=b.VCategory
+from '+@table+' a 
+join Eddi_data..Venue_rep_new b on a.CID=b.CID  where a.v_status=''before_value_match LCCLL''
+and isnull(a.venue,'''')='''' and isnull(b.CID,'''')!='''' ;' 
+EXEC SP_EXECUTESQL @SQL 
+
+
+SELECT @sql= 'update a set 
+a.Venueid=b.venueid,
+a.Venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State,
+a.Country=b.Country,
+a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.VCapacity=b.VCapacity,
+a.VCategory=b.VCategory
+from '+@table+' a 
+join Eddi_data..Venue_rep_new b on a.CID=b.CID  where a.v_status=''after_value_match'' 
+and isnull(a.venue,'''')='''' and isnull(b.CID,'''')!='''' ' 
+EXEC SP_EXECUTESQL @SQL 
+
+
+SELECT @sql= 'update a set 
+a.Venueid=b.venueid,
+a.Venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State,
+a.Country=b.Country,
+a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.VCapacity=b.VCapacity,
+a.VCategory=b.VCategory
+from '+@table+' a 
+join eddi_data..venue_rep_new b on a.CID=b.CID  where a.v_status=''after_value_match LCCLL'' 
+and isnull(a.venue,'''')='''' and isnull(b.CID,'''')!='''' ; ' 
+EXEC SP_EXECUTESQL @SQL
+
+
+/***SELECT @sql= 'update a set 
+a.Venueid=b.venueid,
+a.Venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State,
+a.Country=b.Country,
+a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.VCapacity=b.VCapacity,
+a.VCategory=b.VCategory
+from '+@table+' a 
+join eddi_data..Venue_data_final b on a.CID=b.CID  where a.v_status=''before_value_match_1'' 
+and isnull(a.venue,'''')='''' and isnull(b.CID,'''')!='''' ' 
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'update a set 
+a.Venueid=b.venueid,
+a.Venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State,
+a.Country=b.Country,
+a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.VCapacity=b.VCapacity,
+a.VCategory=b.VCategory
+from '+@table+' a 
+join eddi_data..Venue_data_final b on a.CID=b.CID  where a.v_status=''before_value_match LCCLL_1'' 
+and isnull(a.venue,'''')='''' and isnull(b.CID,'''')!='''' ; ' 
+EXEC SP_EXECUTESQL @SQL
+
+--select distinct V_status from '+@table+' where isnull(venue,'')=''
+
+SELECT @sql= 'update a set 
+a.Venueid=b.venueid,
+a.Venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State,
+a.Country=b.Country,
+a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.VCapacity=b.VCapacity,
+a.VCategory=b.VCategory
+from '+@table+' a 
+join eddi_data..Venue_data_final b on a.CID=b.CID  where a.v_status=''after_value_match_1'' 
+and isnull(a.venue,'''')='''' and isnull(b.CID,'''')!='''' ; ' 
+EXEC SP_EXECUTESQL @SQL
+
+--select distinct V_status from '+@table+' where isnull(venue,'')=''
+
+SELECT @sql= 'update a set 
+a.Venueid=b.venueid,
+a.Venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State,
+a.Country=b.Country,
+a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.VCapacity=b.VCapacity,
+a.VCategory=b.VCategory
+from '+@table+' a 
+join eddi_data..Venue_data_final b on a.CID=b.CID  where a.v_status=''after_value_match LCCLL_1''
+and isnull(a.venue,'''')='''' and isnull(b.CID,'''')!='''' ; ' 
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'update '+@table+' set
+venue=location,
+address=locationaddress,
+city=locationcity,
+state=locationstate,
+zip=locationzip,
+country=locationcountry,
+latitude=locationlatitude,
+longitude=locationlongitude where v_status=''venue_source'' ' 
+EXEC SP_EXECUTESQL @SQL ***/
+
+--select distinct V_status from '+@table+' where isnull(venue,'')=''
+
+--select count(*) from '+@table+' where isnull(CID,'')!='' 
+
+--select count(distinct cid) from '+@table+' -- 22119 
+
+--select count(distinct cid) from '+@table+' where isnull(venueid,'')='' and isnull(cid,'')!=''  -- 2711
+
+--SELECT @sql= 'drop table V_Eddi '  EXEC SP_EXECUTESQL @SQL
+
+--exec sp_refreshview EventsData_Live
+
+--exec sp_refreshview EventsData_Live
+
+--exec sp_refreshview EventsData_Live
+
+--exec sp_refreshview EventsData_Live
+
+
+--SELECT @sql= 'select distinct venueid,venue,address,city,state,zip,country,latitude,longitude,capacity into V_Eddi from EventsData_Live ' 
+--EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'alter table '+@table+' add vid_status nvarchar(500) ' 
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'update a set a.venueid=b.venueid,a.vid_status=''VACZC_Match_Live'' from '+@table+' a join V_Eddi b
+on a.venue=b.venue and a.address=b.address and a.city=b.city and a.zip=b.zip and a.country=b.country where isnull(a.venueid,'''')='''' '  
+EXEC SP_EXECUTESQL @SQL                 -- 12116
+
+SELECT @sql= ' update a set a.venueid=b.venueid ,a.vid_status=''VACC_Match_Live'' from '+@table+' a join V_Eddi b
+on a.venue=b.venue and a.address=b.address and a.city=b.city  and a.country=b.country where isnull(a.venueid,'''')=''''  ' 
+EXEC SP_EXECUTESQL @SQL       -- 322
+
+SELECT @sql= ' update a set a.venueid=b.venueid,a.vid_status=''VCZC_Match_Live'' from '+@table+' a join V_Eddi b
+on a.venue=b.venue  and a.city=b.city and  a.zip=b.zip and a.country=b.country where isnull(a.venueid,'''')=''''  '
+EXEC SP_EXECUTESQL @SQL     -- 3407
+
+SELECT @sql= ' update a set 
+a.venueid=b.venueid,
+a.vid_status=''VRN_CID''
+from '+@table+' a join
+eddi_data..venue_rep_new b on a.CID=b.CID  where isnull(a.venueid,'''')=''''  ' 
+EXEC SP_EXECUTESQL @SQL --3895
+
+/***SELECT @sql= ' update a set 
+a.venueid=b.venueid,
+a.vid_status=''VDF_CID''
+from '+@table+' a join
+eddi_data..Venue_Data_final b on a.CID=b.CID  where isnull(a.venueid,'''')=''''  ' 
+EXEC SP_EXECUTESQL @SQL
+***/
+
+
+--select count(distinct cid) from '+@table+' where isnull(venueid,'')='' and isnull(cid,'')!=''  -- 789
+
+
+
+/***
+SELECT MAX(VENUEID) FROM EventsData_Live where venueid between 1300000 AND 1400000 -- 1376936
+
+SELECT MIN(VENUEID) AS minVENUEID,
+MAX(VENUEID) AS maxVENUEID
+FROM eddi_data..venue_rep_new where venueid between 400000 AND 410000 --494200,400474
+
+SELECT MIN(VENUEID) AS minVENUEID,
+MAX(VENUEID) AS maxVENUEID
+FROM v_eddi where venueid between 400000 AND 410000 -- 449958,400474
+
+SELECT MIN(VENUEID) AS minVENUEID,
+MAX(VENUEID) AS maxVENUEID
+FROM Eddi_refresh_set83 where venueid between 400000 AND 410000  -- 494200, 494258,400439
+
+pls start venueid from 170211
+
+venueid end No is    & check Last refresh table
+***/
+
+SELECT @sql= 'create NONCLUSTERED index vid_x on '+@table+'(venueid); ' 
+EXEC SP_EXECUTESQL @SQL
+
+select @sql='drop table vid_create_1'  
+EXEC SP_EXECUTESQL @SQL
+
+select @sql='select distinct cid into vid_create_1 from '+@table+' where isnull(venueid,'''')='''' order by cid '
+EXEC SP_EXECUTESQL @SQL
+
+select @sql='alter table vid_create_1 add venueid int identity(995197,1) '
+EXEC SP_EXECUTESQL @SQL
+
+
+select @sql='update a set  
+a.venueid=b.venueid,
+a.vid_status=''New_vid''
+from '+@table+' a join
+vid_create_1 b on a.cid=b.cid where isnull(a.venueid,'''')='''' ' 
+EXEC SP_EXECUTESQL @SQL
+
+
+
+SELECT @sql= 'drop table V_Eddi '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'select distinct venueid,venue,address,city,state,zip,country,latitude,longitude,capacity into V_Eddi from EventsData_Live '
+EXEC SP_EXECUTESQL @SQL --213017
+
+SELECT @sql= 'alter table '+@table+' add UP_Live nvarchar(500) '
+EXEC SP_EXECUTESQL @SQL
+
+
+SELECT @sql= 'update a set 
+a.venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State,
+a.Country=b.Country,
+a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.capacity=b.capacity,
+a.UP_Live=''Live_update''
+from '+@table+' a 
+join v_eddi b on a.venueid=b.venueid '
+EXEC SP_EXECUTESQL @SQL -- 293640  144909 
+
+
+/*** SELECT @sql= 'alter table '+@table+'  add Vid_2 nvarchar(1000) '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'alter table '+@table+'  add Address_1 nvarchar(1000) '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'alter table '+@table+'  add TF varchar(20) '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'update a set 
+a.Vid_2=b.venueid,
+a.Address_1=b.Address,
+a.UP_Live=''Live_Vid_update''
+from '+@table+' a 
+join V_Eddi b on 
+a.venue=b.venue where  a.city=b.city and a.zip=b.zip and  isnull(a.UP_Live,'''')=''''   '
+EXEC SP_EXECUTESQL @SQL-- 48
+
+SELECT @sql= 'update a set
+a.TF=''True'' 
+from'+@table+' a join v_eddi b on 
+a.Address_1=b.Address where a.UP_Live=''Live_Vid_update''  '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'update a set
+a.TF=''False'' 
+from'+@table+' a join v_eddi b on 
+a.Address_1!=b.Address where a.UP_Live=''Live_Vid_update''  '
+EXEC SP_EXECUTESQL @SQL
+
+/***SELECT @sql= 'select Distinct Venueid,vid_2, Venue, Address,address_1,TF from 
+'+@table+' where UP_Live=''Live_Vid_update''  '
+EXEC SP_EXECUTESQL @SQL  ***/
+
+SELECT @sql= 'update '+@table+' set up_live='''' where  UP_Live=''Live_Vid_update'' and TF =''false''    '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'update a set
+a.venueid=b.venueid,
+a.venue=b.venue,
+a.Address=b.Address,
+a.City=b.City,
+a.State=b.State,
+a.Country=b.Country,
+a.Zip=b.Zip,
+a.Latitude=b.Latitude,
+a.Longitude=b.Longitude,
+a.capacity=b.capacity
+from '+@table+' a 
+join v_eddi b on 
+a.venue=b.venue and a.city=b.city and a.zip=b.zip  where a.UP_Live=''Live_Vid_update''   '
+EXEC SP_EXECUTESQL @SQL -- 47
+
+SELECT @sql= 'update '+@table+' set address='''' where address=''null''
+update '+@table+' set City='''' where City=''null''
+update '+@table+' set State='''' where State=''null''
+update '+@table+' set zip='''' where zip=''null''
+update '+@table+' set address='''' where address=''None'' 
+update '+@table+' set City='''' where City=''None''
+update '+@table+' set State='''' where State=''None''
+update '+@table+' set zip='''' where zip=''None''   '
+EXEC SP_EXECUTESQL @SQL
+
+
+
+
+ 
+--select distinct cid from '+@table+' where isnull(venueid,'')=''
+
+---select  Count(*) from '+@table+' -- 381278
+
+--- Check venue_sources update the values to venue Attributes.......
+
+--select Count(*) from '+@table+' where isnull(venue,'')!='' ***/
+
+END
