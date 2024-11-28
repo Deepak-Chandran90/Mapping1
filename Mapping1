@@ -1,0 +1,99 @@
+USE [eddiextraction]
+GO
+/****** Object:  StoredProcedure [dbo].[Mapping1]    Script Date: 11/28/2024 9:47:38 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		<Author,,Name>
+-- Create date: <Create Date,,>
+-- Description:	<Description,,>
+-- =============================================
+ALTER PROCEDURE [dbo].[Mapping1]
+--set @curdate = FORMAT(getdate(),'yyyy-MM-dd');
+-- SET NOCOUNT ON added to prevent extra result sets from
+-- interfering with SELECT statements.
+AS
+BEGIN
+SET NOCOUNT ON;
+declare @sql nvarchar(max),@outputA varchar(50),@outputB nvarchar(50),@outputC nvarchar(50),@outputD nvarchar(50),@date nvarchar(20)
+set @outputA='Set'+FORMAT(getdate(),'MMdd') +'_ip_op';
+set @outputB='KG'+FORMAT(getdate(),'MMdd') +'op';
+set @outputC='Set'+FORMAT(getdate(),'MMdd') +'_ML';
+set @outputD='KG'+FORMAT(getdate(),'MMdd') +'_input';
+set @date=FORMAT(getdate(),'yyyy-MM-dd');
+
+--select FORMAT(getdate()-3,'MMdd')
+--select count(*) from EDDI_REFRESH_set22 -- 294647
+--select * from KG0608
+--select * from KG0608OP
+--select count(*) from Set22_ip_op - 8137
+
+SELECT @sql= 'select * into '+@outputA+' from set_mmdd_IP_OP where 1=2'
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'insert into '+@outputA+' (Input_ID,[Input Location],[Input Locationaddress],[Input Locationcity],[Input locationstate],
+[Input locationzip],[Input Locationcountry],[input locationlatitude],[Input locationlongitude])
+select temp_id,location,locationaddress,locationcity,locationstate,locationzip,
+locationcountry,locationlatitude,locationlongitude from '+@outputD+' '
+EXEC SP_EXECUTESQL @SQL
+
+/***SELECT @sql= 'select top 10 * from set_mmdd_IP_OP '
+EXEC SP_EXECUTESQL @SQL ***/
+
+SELECT @sql= 'alter table '+@outputA+' add CID nvarchar(500)'
+EXEC SP_EXECUTESQL @SQL
+SELECT @sql= 'alter table '+@outputA+' add vcapacity nvarchar(2000)'
+EXEC SP_EXECUTESQL @SQL
+SELECT @sql= 'alter table '+@outputA+' add vcategory nvarchar(500)'
+EXEC SP_EXECUTESQL @SQL
+
+--select top 10 * from Set22_ip_op
+
+SELECT @sql= 'update a set a.cid=b.cid, a.vcapacity=b.capacity, a.vcategory=b.category
+from '+@outputA+' a join '+@outputB+' b on a.Input_id=b.ref_id '
+EXEC SP_EXECUTESQL @SQL
+
+--select count(*) from Set22_ip_op where isnull(cid,'')=''
+
+SELECT @sql= 'delete from '+@outputA+' where isnull(cid,'''')='''' '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'alter table '+@outputA+' add [Google  Name] nvarchar(255)
+alter table '+@outputA+' add [Google  address] nvarchar(255)
+alter table '+@outputA+' add [Google city] nvarchar(255)
+alter table '+@outputA+' add [Google state] nvarchar(255)
+alter table '+@outputA+' add [Google  Zip] nvarchar(255)
+alter table '+@outputA+' add [Google  Country] nvarchar(255)
+alter table '+@outputA+' add [Google  Latitude] nvarchar(255)
+alter table '+@outputA+' add [Google  longitude] nvarchar(255) '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'update a set
+a.[Google  Name]=b.CID_name,
+a.[Google  address]=b.CID_address1,
+a.[Google city]=b.CID_city,
+a.[Google state]=b.CID__state,
+a.[Google  Country]=b.CID_country,
+a.[Google  Zip]=b.CID_zipcode,
+a.[Google  Latitude]=b.CID_latitude,
+a.[Google  longitude]=b.CID_longitude
+from '+@outputA+' a join '+@outputB+' b on 
+a.cid=b.cid '
+EXEC SP_EXECUTESQL @SQL
+
+--select top 10 * from Set22_ip_op
+
+SELECT @sql= 'select * into '+@outputC+' from '+@outputA+' '
+EXEC SP_EXECUTESQL @SQL
+
+SELECT @sql= 'delete from d FROM (SELECT *,ROW_NUMBER() OVER (PARTITION BY input_id ORDER BY input_id) AS intRow FROM '+@outputC+') AS d WHERE intRow != 1 '
+EXEC SP_EXECUTESQL @SQL
+
+--select * from Set22_iP_OP_ML
+
+exec [dbo].[countryupdate] @outputC
+exec [dbo].[stateupdate] @outputC
+
+end
